@@ -3,6 +3,8 @@ from tkcalendar import Calendar
 from datetime import date, datetime
 import pandas
 import os
+import xlwings as xw
+import pandas as pd
 
 # Creating initial window
 
@@ -13,8 +15,8 @@ window.minsize(width=100, height=100)
 
 if not os.path.exists('existing_clients.csv'):
     # Creating mock clients
-    MOCK_CLIENTS={"Nombre" : ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"],
-                  "Razon" : ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10"],
+    MOCK_CLIENTS={"Nombre del cliente" : ["C1", "C2", "C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10"],
+                  "Razon Social" : ["R1", "R2", "R3", "R4", "R5", "R6", "R7", "R8", "R9", "R10"],
                   }
     MOCK_CLIENT_DATAFRAME = pandas.DataFrame(MOCK_CLIENTS)
     MOCK_CLIENT_DATAFRAME.to_csv('existing_clients.csv', index=False)
@@ -41,20 +43,21 @@ if not os.path.exists('existing_projects.csv'):
     MOCK_PROJECTS_DATAFRAME = pandas.DataFrame(MOCK_PROJECTS)
     MOCK_PROJECTS_DATAFRAME.to_csv('existing_projects.csv', index=False)
 
-
 # Functions
 
 def destroy_view():
     for widget in window.winfo_children():
         widget.destroy()
 
-def push_new_client_to_csv(new_client_dict):
-    new_client_dataframe = pandas.DataFrame(new_client_dict)
-    existing_clients_dataframe = pandas.read_csv('existing_clients.csv')
-    updated_projects = pandas.concat([existing_clients_dataframe, new_client_dataframe], ignore_index=True)
-    updated_projects.to_csv('existing_clients.csv', index=False)
+## Missing push push_new_client_to_excel()
 
-    messagebox.showinfo(title="Éxito", message="Datos del cliente guardados con éxito")
+# def push_new_client_to_csv(new_client_dict):
+#     new_client_dataframe = pandas.DataFrame(new_client_dict)
+#     existing_clients_dataframe = pandas.read_csv('existing_clients.csv')
+#     updated_projects = pandas.concat([existing_clients_dataframe, new_client_dataframe], ignore_index=True)
+#     updated_projects.to_csv('existing_clients.csv', index=False)
+#
+#     messagebox.showinfo(title="Éxito", message="Datos del cliente guardados con éxito")
 
 def push_new_data_to_csv(new_data_dict):
 
@@ -72,14 +75,13 @@ def calendar_view(new_data_dict):
 
     def grab_date():
         selected_date = calendar.get_date()
-        print(type(selected_date))
         date_object = datetime.strptime(selected_date, "%m/%d/%y").date()
         is_okay = messagebox.askokcancel(
             title="Revisar fecha",
             message=f"La fecha seleccionada es {date_object.strftime("%d-%b-%Y")}, esto es correcto?"
         )
         if is_okay:
-            new_data_dict["Fecha abono"] = [selected_date]
+            new_data_dict["Fecha de pago anticipo"] = [selected_date]
             push_new_data_to_csv(new_data_dict)
         else:
             return
@@ -104,14 +106,12 @@ def new_project_view(client_type, client_name, client_razon_social=None):
             new_client_dict = {"Nombre": [client_name],
                              "Razon": [client_razon_social],
                              }
-            push_new_client_to_csv(new_client_dict)
-
-
+            # We need to update this part
+            # push_new_client_to_excel(new_client_dict)
 
     destroy_view()
 
     window.title("Nuevo Proyecto")
-
     window.grid_columnconfigure(1, weight=0)
 
     # Project name widget
@@ -194,7 +194,7 @@ def new_project_view(client_type, client_name, client_razon_social=None):
 
         return pre_payment_amount, int_payment, int_percentage
 
-    calculate_pre_payment_amount_button = Button(text="Calcular anticipo", width=10, command=lambda: calculate_pre_payment_amount (calculate_button_clicked="yes"))
+    calculate_pre_payment_amount_button = Button(text="Calcular anticipo", width=15, command=lambda: calculate_pre_payment_amount (calculate_button_clicked="yes"))
     calculate_pre_payment_amount_button.grid(column=2, row=4, pady=5, padx=(20,0), sticky='w')
 
     # Renderist widget
@@ -225,7 +225,7 @@ def new_project_view(client_type, client_name, client_razon_social=None):
     commission_value_selection.set(None)
 
     ten_radio_button = Radiobutton(text="10%", variable=commission_value_selection, value=10)
-    ten_radio_button.grid(column=0, row=6, pady=5, padx=(100,0), sticky='w', columnspan=2)
+    ten_radio_button.grid(column=0, row=6, pady=5, padx=(70,0), sticky='w', columnspan=2)
 
     twenty_radio_button = Radiobutton(text="20%", variable=commission_value_selection, value=20)
     twenty_radio_button.grid(column=1, row=6, pady=5, padx=(0,160), sticky='e')
@@ -237,7 +237,7 @@ def new_project_view(client_type, client_name, client_razon_social=None):
     forty_radio_button.grid(column=1, row=6, pady=5, padx=(0,40), sticky='e')
 
     fifty_radio_button = Radiobutton(text="50%", variable=commission_value_selection, value=50)
-    fifty_radio_button.grid(column=1, row=6, pady=5, padx=(0,170), sticky='e', columnspan=2)
+    fifty_radio_button.grid(column=1, row=6, pady=5, padx=(0,140), sticky='e', columnspan=2)
 
     # Calculate Commission button
 
@@ -305,21 +305,21 @@ def new_project_view(client_type, client_name, client_razon_social=None):
                                                                f"Anticipo abonado: {is_pre_payment_paid}"
             )
             if is_okay:
-                new_data_dict = {"Nombre": [project_name],
-                                 "Concepto": [project_concept],
-                                 "Cliente": [client_name],
-                                 "Total": [total_payment],
-                                 "Porcentaje anticipo": [pre_payment_percentage],
-                                 "Monto Anticipo": [pre_payment_amount],
+                new_data_dict = {"Proyecto": [project_name],
+                                 "Conceptos": [project_concept],
+                                 "Nombre del cliente": [client_name],
+                                 "Total con IVA": [total_payment],
+                                 "Anticipo %": [pre_payment_percentage],
+                                 "Anticipo con IVA ": [pre_payment_amount],
                                  "Renderista": [renderist],
-                                 "Porcentaje Comision": [commission_percentage],
-                                 "Comision Anticipo": [commission_amount],
+                                 "Comisión": [commission_percentage],
+                                 "Comisión Anticipo": [commission_amount],
                                  "Anticipo abonado": [is_pre_payment_paid],
                                  }
                 if is_pre_payment_paid == "Sí":
                     calendar_view(new_data_dict)
                 elif is_pre_payment_paid == "No":
-                    new_data_dict["Fecha abono"] = [None]
+                    new_data_dict["Fecha de pago anticipo"] = [None]
                     push_new_data_to_csv(new_data_dict)
             else:
                 return
@@ -332,6 +332,7 @@ def new_project_view(client_type, client_name, client_razon_social=None):
 def show_existing_client_list():
     try:
         dataframe = pandas.read_csv("existing_clients.csv")
+        #dataframe = raw_data
     except FileNotFoundError as e:
         filename = e.filename
         messagebox.showerror(title="Oops", message=f"La base de datos {filename} no existe.")
@@ -339,7 +340,7 @@ def show_existing_client_list():
     else:
         window.title("Clientes existentes")
 
-        client_name_list = dataframe["Nombre"].to_list()
+        client_name_list = dataframe["Nombre del cliente"].to_list()
 
         select_client_label = Label(text="Selecciona un cliente:")
         select_client_label.grid(column=0, row=0, pady=5)
@@ -359,7 +360,7 @@ def show_existing_client_list():
             selected_indices = client_list_box.curselection()
             if selected_indices:
                 selected_client_name = client_name_list[selected_indices[0]]
-                selected_client_razon = dataframe.loc[selected_indices[0], "Razon"]
+                selected_client_razon = dataframe.loc[selected_indices[0], "Razon Social"]
                 new_project_view(client_type="old", client_name=selected_client_name, client_razon_social=selected_client_razon)
             else:
                 messagebox.showwarning(title="Oops", message="No elegiste ningún cliente.")
@@ -371,6 +372,7 @@ def show_existing_client_list():
 
 
 def show_new_client_view():
+    destroy_view()
     window.title("Nuevo cliente")
 
     client_name_label = Label(text="Nombre del cliente:")
@@ -389,37 +391,61 @@ def show_new_client_view():
     ok_button.grid(column=0, columnspan=2, pady=5)
 
 
-def client_detail_view(new_client):
+def client_detail_view(new_client, invoice_required):
     destroy_view()
 
-    if new_client == "yes":
+    if new_client == "yes" and invoice_required == "yes":
         show_new_client_view()
-    else:
+        # Add logic here for new client + invoice
+    elif new_client == "yes" and invoice_required == "no":
+        show_new_client_view()
+        # Add logic here for new client + no invoice
+    elif new_client == "no" and invoice_required == "yes":
         show_existing_client_list()
+        # Add logic for existing client + invoice
+    elif new_client == "no" and invoice_required == "no":
+        show_existing_client_list()
+        # Add logic for existing client + no invoice
 
-
-def client_prompt_view():
+def client_prompt_view(invoice_required):
     destroy_view()
 
     new_client_label = Label(text="¿Es un cliente nuevo?")
     new_client_label.grid(column=0, row=0, columnspan=2)
 
-    yes_button = Button(text="Sí", width=4, command=lambda: client_detail_view("yes"))
-    yes_button.grid(column=0, row=1, pady=10)
+    yes_button = Button(text="Sí", width=4, command=lambda: client_detail_view("yes", invoice_required))
+    yes_button.grid(column=0, row=2, pady=10)
 
-    no_button = Button(text="No", width=4, command=lambda: client_detail_view("no"))
-    no_button.grid(column=1, row=1, pady=10)
+    no_button = Button(text="No", width=4, command=lambda: client_detail_view("no", invoice_required))
+    no_button.grid(column=1, row=2, pady=10)
+
+def handle_client_selection(choice):
+    if choice not in ["yes", "no"]:
+        messagebox.showwarning("Atención", "Debes seleccionar si requiere factura.")
+        return
+    else:
+        client_prompt_view(choice)
+
+def invoice_needed_view():
+    destroy_view()
+
+    invoice_label = Label(text="¿Se requiere factura?")
+    invoice_label.grid(column=0, row=0, columnspan=2)
+
+    yes_button = Button(text="Sí", width=4, command=lambda: handle_client_selection("yes"))
+    yes_button.grid(column=0, row=2, pady=10)
+
+    no_button = Button(text="No", width=4, command=lambda: handle_client_selection("no"))
+    no_button.grid(column=1, row=2, pady=10)
 
 # Initial view
 
 def initial_view():
     destroy_view()
-    new_project = Button(text="Nuevo Proyecto", width=20, command=client_prompt_view)
+    new_project = Button(text="Nuevo Proyecto", width=20, command=invoice_needed_view)
     new_project.grid(column=0, row=0, sticky="ew")
-    updated_projects = pandas.read_csv("existing_projects.csv")
-    print(updated_projects)
+
 
 initial_view()
-
 
 window.mainloop()
